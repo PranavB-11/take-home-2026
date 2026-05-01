@@ -1,4 +1,3 @@
-from typing import Any
 from pathlib import Path
 from pydantic import BaseModel, field_validator
 
@@ -12,8 +11,8 @@ if CATEGORIES_FILE.exists():
             if line and not line.startswith("#"):
                 VALID_CATEGORIES.add(line)
 
+
 class Category(BaseModel):
-    # A category from Google's Product Taxonomy
     # https://www.google.com/basepages/producttype/taxonomy.en-US.txt
     name: str
 
@@ -24,14 +23,26 @@ class Category(BaseModel):
             raise ValueError(f"Category '{v}' is not a valid category in categories.txt")
         return v
 
+
 class Price(BaseModel):
     price: float
     currency: str
-    # If a product is on sale, this is the original price
     compare_at_price: float | None = None
 
-# This is the final product schema that you need to output. 
-# You may add additional models as needed.
+
+class VariantAttribute(BaseModel):
+    name: str
+    value: str
+
+
+class Variant(BaseModel):
+    attributes: list[VariantAttribute]
+    price: Price | None = None
+    available: bool = True
+    sku: str | None = None
+    image_url: str | None = None
+
+
 class Product(BaseModel):
     name: str
     price: Price
@@ -42,4 +53,18 @@ class Product(BaseModel):
     category: Category
     brand: str
     colors: list[str]
-    variants: list[Any] # TODO (@dev): Define variant model
+    variants: list[Variant]
+
+
+class RawExtraction(BaseModel):
+    """Intermediate model for LLM output before category validation."""
+    name: str
+    price: Price
+    description: str
+    key_features: list[str]
+    image_urls: list[str]
+    video_url: str | None = None
+    suggested_category: str
+    brand: str
+    colors: list[str]
+    variants: list[Variant]
